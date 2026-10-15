@@ -1,0 +1,43 @@
+name: Release Please
+
+on:
+  workflow_call:
+    inputs:
+      app-client-id:
+        type: string
+        required: true
+    secrets:
+      app-private-key:
+        required: true
+    outputs:
+      release_created:
+        value: ${{ jobs.release-please.outputs.release_created }}
+      tag_name:
+        value: ${{ jobs.release-please.outputs.tag_name }}
+      version:
+        value: ${{ jobs.release-please.outputs.version }}
+      major:
+        value: ${{ jobs.release-please.outputs.major }}
+      minor:
+        value: ${{ jobs.release-please.outputs.minor }}
+
+jobs:
+  release-please:
+    runs-on: ubuntu-26.04
+    permissions: {}
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+      major: ${{ steps.release.outputs.major }}
+      minor: ${{ steps.release.outputs.minor }}
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ inputs.app-client-id }}
+          private-key: ${{ secrets.app-private-key }}
+      - id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ steps.app-token.outputs.token }}

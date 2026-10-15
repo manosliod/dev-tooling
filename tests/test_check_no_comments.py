@@ -167,6 +167,12 @@ class ToolDirectiveTest(unittest.TestCase):
         self.assertEqual(lines('a.vue', '<template>\n  <!-- prettier-ignore -->\n  <!-- card -->\n</template>\n'), [3])
         self.assertEqual(lines('base.html', '{# djlint:off #}\n{# nav bar #}\n'), [2])
 
+    def test_release_please_markers(self) -> None:
+        self.assertEqual(lines('CMakeLists.txt', 'project(a VERSION 1.0.0) # x-release-please-version\n'), [])
+        self.assertEqual(lines('a.ts', "export const v = '1.0.0' // x-release-please-version\n"), [])
+        self.assertEqual(lines('a.py', '# x-release-please-start-version\nV = "1"\n# x-release-please-end\n'), [])
+        self.assertEqual(lines('a.py', 'V = "1"  # x-release-please-version bumped by CI\n'), [1])
+
     def test_repo_allow_patterns(self) -> None:
         findings = find_comments('a.py', '# route: /movies\n# a note\n', (r'#\s*route:\s*\S+',))
         self.assertEqual([finding.line for finding in findings], [2])
