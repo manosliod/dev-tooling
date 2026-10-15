@@ -66,10 +66,10 @@ Add this job under `jobs:` in the repository's workflow:
 
 ```yaml
   no-comments:
-    uses: manosliod/dev-tooling/.github/workflows/no-comments.yml@v1
+    uses: manosliod/dev-tooling/.github/workflows/no-comments.yml@v1.1
 ```
 
-The workflow checks out the calling repository, then this repository at the exact commit that `@v1` points to, and
+The workflow checks out the calling repository, then this repository at the exact commit that `@v1.1` points to, and
 runs the check.
 
 ### Run it on your machine
@@ -77,8 +77,8 @@ runs the check.
 From anywhere inside a repository:
 
 ```bash
-uvx --from git+https://github.com/manosliod/dev-tooling@v1 check-no-comments
-uvx --from git+https://github.com/manosliod/dev-tooling@v1 check-no-comments src/app.ts src/main.py
+uvx --from git+https://github.com/manosliod/dev-tooling@v1.1 check-no-comments
+uvx --from git+https://github.com/manosliod/dev-tooling@v1.1 check-no-comments src/app.ts src/main.py
 ```
 
 The first line checks the whole repository. The second checks only the files you name.
@@ -109,18 +109,34 @@ the edited path from the hook input and blocks the change if the file has a comm
 
 ## Versions
 
-Releases are tagged `vMAJOR.MINOR.PATCH`, and a moving `vMAJOR` tag points to the newest release of that major
-version. Repositories pin `@v1`, so fixes reach them without a change on their side. A change that could make a
-passing repository fail, such as a new language or a removed directive, is a new major version.
+Each release is tagged `vMAJOR.MINOR.PATCH`. Two more tags move with it:
 
-To release:
+| Tag | Points to | Who uses it |
+| --- | --- | --- |
+| `v1.1` | the newest `v1.1.x` | Repositories: they get fixes on their own, and nothing that could make them fail |
+| `v1` | the newest `v1.x.y` | Only kept so older callers keep working |
+| `v1.1.0` | one release, never moves | Anyone who wants an exact version |
+
+What each part of the version means:
+
+- **Patch** (`v1.1.1`): a fix that can never make a passing repository fail, such as fewer false alarms or a clearer
+  message.
+- **Minor** (`v1.2.0`): anything that could make a passing repository fail, such as a new language, a new check or a
+  directive that is no longer allowed. Each repository moves to it in its own pull request, which shows whether it
+  still passes.
+- **Major** (`v2.0.0`): a change in how the workflow is called, such as a renamed workflow or a new required input.
+
+To release a patch:
 
 ```bash
-git tag v1.0.1
+git tag v1.1.1
+git tag -f v1.1
 git tag -f v1
-git push origin v1.0.1
-git push -f origin v1
+git push origin v1.1.1
+git push -f origin v1.1 v1
 ```
+
+To release a minor, tag `v1.2.0` and create `v1.2` the same way, move `v1`, and leave `v1.1` where it is.
 
 ## Develop
 
