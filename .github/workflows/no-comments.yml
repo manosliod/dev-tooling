@@ -1,0 +1,21 @@
+name: No comments
+
+on:
+  workflow_call:
+
+jobs:
+  no-comments:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .dev-tooling
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: python .dev-tooling/src/check_no_comments/__init__.py
