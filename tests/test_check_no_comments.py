@@ -12,6 +12,9 @@ class PythonTest(unittest.TestCase):
         text = 'def f():\n    """Doc."""\n    return 1  # why\n'
         self.assertEqual(lines('a.py', text), [2, 3])
 
+    def test_f_strings_and_assigned_strings_are_not_docstrings(self) -> None:
+        self.assertEqual(lines('a.py', 'x = 1\nf"{x}"\ny = "text"\n'), [])
+
     def test_ignores_hash_inside_strings(self) -> None:
         self.assertEqual(lines('a.py', "url = 'http://x/#top'\ncolor = \"#fff\"\n"), [])
 
@@ -31,6 +34,13 @@ class CStyleTest(unittest.TestCase):
     def test_cpp_raw_strings_and_digit_separators(self) -> None:
         text = 'auto a = R"x(// no)x";\nint n = 1\'000\'000; // yes\nchar c = \'/\';\n#include <x> /* yes */\n'
         self.assertEqual(lines('a.cpp', text), [2, 4])
+
+    def test_kotlin_and_gradle(self) -> None:
+        self.assertEqual(lines('A.kt', 'val s = "// no"\n// c\n/* d */\n'), [2, 3])
+        self.assertEqual(lines('build.gradle', 'id "x" // c\n'), [1])
+
+    def test_tsx(self) -> None:
+        self.assertEqual(lines('a.tsx', 'const a = <a href="http://x">{/* c */}</a>\n'), [1])
 
     def test_cpp_nolint(self) -> None:
         self.assertEqual(lines('a.cpp', 'int x = 0; // NOLINT(bugprone-foo)\n'), [])
@@ -75,6 +85,13 @@ class MarkupTest(unittest.TestCase):
         )
         self.assertEqual(lines('A.vue', text), [2, 5, 9])
 
+    def test_html_script_and_style(self) -> None:
+        text = '<p>x</p>\n<script>\nconst a = "//no" // c\n</script>\n<style>\n/* s */\n</style>\n'
+        self.assertEqual(lines('index.htm', text), [3, 6])
+
+    def test_svg(self) -> None:
+        self.assertEqual(lines('icon.svg', '<?xml version="1.0"?>\n<!-- c -->\n<svg/>\n'), [2])
+
     def test_django_template(self) -> None:
         text = '{# c #}\n<p>{{ a }}</p>\n{% comment %}x{% endcomment %}\n'
         self.assertEqual(lines('index.html', text), [1, 3])
@@ -105,6 +122,13 @@ class HashStyleTest(unittest.TestCase):
     def test_gitignore_and_editorconfig(self) -> None:
         self.assertEqual(lines('.gitignore', '# c\nbuild/\n\\#file\n'), [1])
         self.assertEqual(lines('.editorconfig', '; c\nroot = true\n'), [1])
+
+    def test_build_and_config_files(self) -> None:
+        self.assertEqual(lines('CMakeLists.txt', 'set(A "#no") # c\n#[[ b ]]\n'), [1, 2])
+        self.assertEqual(lines('Makefile', 'all: x # c\n\techo "#no"\n'), [1])
+        self.assertEqual(lines('app.properties', '# c\na=b\n'), [1])
+        self.assertEqual(lines('requirements.txt', 'django==5.2 # c\n'), [1])
+        self.assertEqual(lines('.gitattributes', '# c\n*.sh text eol=lf\n'), [1])
 
     def test_unknown_files_are_skipped(self) -> None:
         self.assertEqual(lines('notes.txt', '# anything'), [])

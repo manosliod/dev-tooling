@@ -15,9 +15,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/tree-sitter-language-pack
+          key: tree-sitter-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+      - run: pip install .
       - run: python -m unittest discover -s tests
-        env:
-          PYTHONPATH: src
 
   no-comments:
     uses: ./.github/workflows/no-comments.yml
