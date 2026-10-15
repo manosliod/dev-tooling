@@ -18,12 +18,22 @@ What the code cannot say goes into plain-language docs in `docs/`. Comments that
 **What it does.** It reads every file tracked by git and reports each comment as `file:line: text`. If it finds any,
 it exits with an error, and that makes CI fail.
 
-**How it avoids false alarms.** It reads each language the way the language does. So `"http://x"` in a string,
-`#fff` in a quoted colour, or a regular expression like `/\/\//` are not counted as comments.
+**How it avoids false alarms.** It does not guess with patterns. Each file is parsed by the
+[tree-sitter](https://tree-sitter.github.io/) grammar of its language, from
+[`tree-sitter-language-pack`](https://pypi.org/project/tree-sitter-language-pack/), and only what the grammar calls a
+comment is checked. So `"http://x"` in a string, `#fff` in a quoted colour, or a regular expression like `/\/\//` are
+never counted. Scripts and styles inside HTML and Vue files are parsed with their own grammar.
 
-**Languages.** Python (including docstrings), Java, Kotlin/Gradle, C and C++, JavaScript and TypeScript, Vue, HTML
-and Django templates, CSS, JSON/JSONC, YAML, TOML, shell, INI, `.properties`, CMake, Make, Dockerfile, `.gitignore`
-and similar. Other files are skipped.
+**First run.** The grammars are not inside the Python package. The first run downloads them once (about 23 MB, from
+the package's GitHub releases) into `~/.cache/tree-sitter-language-pack/`, and every later run uses that copy. The
+reusable workflow caches that folder between CI runs. If the download fails, the check fails; it never passes
+without having read the files.
+
+**Languages.** Python (including docstrings), Java, Kotlin, Gradle, C and C++, JavaScript, TypeScript and TSX, Vue,
+HTML and Django templates, XML and SVG, CSS, JSON/JSONC, YAML, TOML, shell and `.env`, INI, `.editorconfig`,
+`.properties`, CMake, Make, Dockerfile, `requirements.txt`, `.gitignore`, `.gitattributes` and similar. Other files are
+skipped. A new language is one line in `SUFFIX_LANGUAGES` or `NAME_LANGUAGES`, as long as the language pack has a
+grammar for it.
 
 **Allowed lines.** Comments that a tool reads, written with nothing after them. For example:
 
@@ -75,7 +85,7 @@ The first line checks the whole repository. The second checks only the files you
 
 ### Use it as a Claude Code hook
 
-With this repository cloned, Claude Code can run the check after every file it edits. With `--hook`, the check reads
+With this repository cloned and [uv](https://docs.astral.sh/uv/) installed, Claude Code can run the check after every file it edits. With `--hook`, the check reads
 the edited path from the hook input and blocks the change if the file has a comment:
 
 ```json
@@ -87,7 +97,7 @@ the edited path from the hook input and blocks the change if the file has a comm
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/Sites/manosliod/dev-tooling/src/check_no_comments/__init__.py\" --hook",
+            "command": "uv run --quiet --project \"$HOME/Sites/manosliod/dev-tooling\" check-no-comments --hook",
             "timeout": 15
           }
         ]
@@ -115,8 +125,8 @@ git push -f origin v1
 ## Develop
 
 ```bash
-PYTHONPATH=src python3 -m unittest discover -s tests
-python3 src/check_no_comments/__init__.py
+uv run python -m unittest discover -s tests
+uv run check-no-comments
 ```
 
 The first line runs the tests. The second runs the check on this repository itself, which CI also does through the
