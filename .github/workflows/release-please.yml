@@ -6,6 +6,9 @@ on:
       app-client-id:
         type: string
         required: true
+      auto-merge:
+        type: boolean
+        default: false
     secrets:
       app-private-key:
         required: true
@@ -41,3 +44,8 @@ jobs:
         uses: googleapis/release-please-action@v5
         with:
           token: ${{ steps.app-token.outputs.token }}
+      - if: inputs.auto-merge && steps.release.outputs.pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ steps.release.outputs.pr }}
+        run: gh pr merge "$(jq -r .number <<< "$PR")" --auto --squash --repo "$GITHUB_REPOSITORY"
