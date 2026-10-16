@@ -8,6 +8,8 @@ calls them from here, pinned to a version, instead of keeping its own copy.
 | Name | Kind | What it does |
 | --- | --- | --- |
 | `no-comments` | Reusable workflow and Python command | Fails when a tracked file has a comment written for people |
+| `release-please` | Reusable workflow | Opens release pull requests, writes `CHANGELOG.md`, tags releases |
+| `pr-title` | Reusable workflow | Fails when a pull request title is not a [Conventional Commit](https://www.conventionalcommits.org/) |
 
 ## no-comments
 
@@ -66,10 +68,10 @@ Add this job under `jobs:` in the repository's workflow:
 
 ```yaml
   no-comments:
-    uses: manosliod/dev-tooling/.github/workflows/no-comments.yml@v1.1
+    uses: manosliod/dev-tooling/.github/workflows/no-comments.yml@v1.2
 ```
 
-The workflow checks out the calling repository, then this repository at the exact commit that `@v1.1` points to, and
+The workflow checks out the calling repository, then this repository at the exact commit that `@v1.2` points to, and
 runs the check.
 
 ### Run it on your machine
@@ -77,8 +79,8 @@ runs the check.
 From anywhere inside a repository:
 
 ```bash
-uvx --from git+https://github.com/manosliod/dev-tooling@v1.1 check-no-comments
-uvx --from git+https://github.com/manosliod/dev-tooling@v1.1 check-no-comments src/app.ts src/main.py
+uvx --from git+https://github.com/manosliod/dev-tooling@v1.2 check-no-comments
+uvx --from git+https://github.com/manosliod/dev-tooling@v1.2 check-no-comments src/app.ts src/main.py
 ```
 
 The first line checks the whole repository. The second checks only the files you name.
@@ -107,36 +109,142 @@ the edited path from the hook input and blocks the change if the file has a comm
 }
 ```
 
+## release-please
+
+[release-please](https://github.com/googleapis/release-please-action) reads the commits that land on the default
+branch. When there is something to release, it opens a pull request that raises the version and adds the new entries
+to `CHANGELOG.md`. Merging that pull request tags the release (`v1.2.0`) and publishes a GitHub release with the same
+notes.
+
+The commit type decides the version and where the entry goes:
+
+| Commit | Version | Changelog section |
+| --- | --- | --- |
+| `fix: ...` | patch | 🐛 Bug Fixes |
+| `feat: ...` | minor | ✨ Features |
+| `feat!: ...` or a `BREAKING CHANGE:` footer | major | the section of its type, marked breaking |
+| `perf:`, `refactor:`, `revert:` | patch | ⚡ Performance, ♻️ Refactoring, ⏪ Reverts |
+| `docs:`, `test:`, `build:`, `ci:`, `chore:`, `style:` | none on their own | hidden |
+
+Pull requests are squash-merged, so each one becomes one commit whose message is the pull request title. That is why
+`pr-title` checks the title.
+
+**Why a GitHub App.** A pull request opened with the workflow's own `GITHUB_TOKEN` does not start other workflows, so
+the release pull request would never get the checks that branch protection requires. The workflow therefore opens it
+with a token from a GitHub App, made by
+[`actions/create-github-app-token`](https://github.com/actions/create-github-app-token).
+
+### Set up a repository
+
+1. Install the release GitHub App on the repository.
+2. Add the variable `RELEASE_APP_CLIENT_ID` and the secret `RELEASE_APP_PRIVATE_KEY`:
+
+   ```bash
+   gh variable set RELEASE_APP_CLIENT_ID --body "<client id>"
+   gh secret set RELEASE_APP_PRIVATE_KEY < path/to/private-key.pem
+   ```
+
+3. Add `release-please-config.json` and `.release-please-manifest.json` at the root. The config holds the release type
+   and the changelog sections; this repository's own config is an example. The manifest holds the current version,
+   e.g. `{ ".": "0.1.0" }`.
+4. Add the workflow:
+
+   ```yaml
+   name: Release
+
+   on:
+     push:
+       branches:
+         - master
+
+   permissions: {}
+
+   jobs:
+     release-please:
+       uses: manosliod/dev-tooling/.github/workflows/release-please.yml@v1.2
+       with:
+         app-client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+         auto-merge: true
+       secrets:
+         app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+     deploy:
+       needs: release-please
+       if: needs.release-please.outputs.release_created == 'true'
+       runs-on: ubuntu-26.04
+       steps:
+         - run: echo "deploy ${{ needs.release-please.outputs.tag_name }}"
+   ```
+
+**Deploy or publish on a release.** The workflow returns `release_created`, `tag_name`, `version`, `major` and
+`minor`. A job in the same workflow that `needs: release-please` and checks `release_created` runs only when a
+release was made, as `deploy` does above. No second workflow has to watch for new tags.
+
+**Auto-merge.** With `auto-merge: true`, the workflow turns on GitHub's auto-merge for the release pull request, so it
+squash-merges on its own once every required check passes, and each merge to the default branch ends in a release.
+The repository needs "Allow auto-merge" on (`gh repo edit --enable-auto-merge`). Without it, someone merges the
+release pull request by hand.
+
+**A version outside the rules.** A commit with a `Release-As: 1.0.0` line in its body makes the next release that
+version.
+
+**Version markers in files.** release-please updates a version in a file it does not know when the line ends with a
+`x-release-please-version` comment, e.g. `project(app VERSION 1.0.0) # x-release-please-version` in `CMakeLists.txt`,
+listed under `extra-files` in the config. `no-comments` allows these markers.
+
+**Jira links.** Write the Jira key in the pull request title, e.g. `feat: KAN-12 show the winning line`. An
+[autolink reference](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/configuring-autolinks-to-reference-external-resources)
+on the repository turns every `KAN-12` in pull requests, commits and GitHub releases into a link to the issue:
+
+```bash
+gh api repos/OWNER/REPO/autolinks -f key_prefix=KAN- \
+  -f url_template='https://manossworkspace-35376636.atlassian.net/browse/KAN-<num>' -F is_alphanumeric=false
+```
+
+## pr-title
+
+Uses [`amannn/action-semantic-pull-request`](https://github.com/amannn/action-semantic-pull-request) to fail a pull
+request whose title is not `type: subject` or `type(scope): subject`, with one of the standard Conventional Commit
+types.
+
+```yaml
+name: Pull request
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    uses: manosliod/dev-tooling/.github/workflows/pr-title.yml@v1.2
+```
+
 ## Versions
 
 Each release is tagged `vMAJOR.MINOR.PATCH`. Two more tags move with it:
 
 | Tag | Points to | Who uses it |
 | --- | --- | --- |
-| `v1.1` | the newest `v1.1.x` | Repositories: they get fixes on their own, and nothing that could make them fail |
+| `v1.2` | the newest `v1.2.x` | Repositories: they get fixes on their own, and nothing that could make them fail |
 | `v1` | the newest `v1.x.y` | Only kept so older callers keep working |
-| `v1.1.0` | one release, never moves | Anyone who wants an exact version |
+| `v1.2.0` | one release, never moves | Anyone who wants an exact version |
 
 What each part of the version means:
 
-- **Patch** (`v1.1.1`): a fix that can never make a passing repository fail, such as fewer false alarms or a clearer
+- **Patch** (`v1.2.1`): a fix that can never make a passing repository fail, such as fewer false alarms or a clearer
   message.
-- **Minor** (`v1.2.0`): anything that could make a passing repository fail, such as a new language, a new check or a
+- **Minor** (`v1.3.0`): anything that could make a passing repository fail, such as a new language, a new check or a
   directive that is no longer allowed. Each repository moves to it in its own pull request, which shows whether it
   still passes.
 - **Major** (`v2.0.0`): a change in how the workflow is called, such as a renamed workflow or a new required input.
 
-To release a patch:
-
-```bash
-git tag v1.1.1
-git tag -f v1.1
-git tag -f v1
-git push origin v1.1.1
-git push -f origin v1.1 v1
-```
-
-To release a minor, tag `v1.2.0` and create `v1.2` the same way, move `v1`, and leave `v1.1` where it is.
+Releases are made by this repository's own `release-please` workflow: `fix:` gives a patch, `feat:` a minor and a
+breaking change a major. A minor that can make a passing repository fail is still a minor, even when its commit is a
+`fix:`; give it the version with a `Release-As:` line. After each release, the `move-tags` job points `vMAJOR.MINOR`
+and `vMAJOR` at it, so a new minor creates `v1.2` and leaves `v1.1` where it was.
 
 ## Develop
 

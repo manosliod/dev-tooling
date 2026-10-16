@@ -95,6 +95,10 @@ MARKUP_DIRECTIVES = (
     r'\{#\s*djlint:\s*ignore\s+[\w,\-]+\s*#\}',
     r'<\?xml[^>]*\?>',
 )
+RELEASE_PLEASE_MARKERS = (
+    r'(#|//|/\*|<!--)\s*x-release-please-(start-)?(version|major|minor|patch)\s*(\*/|-->)?',
+    r'(#|//|/\*|<!--)\s*x-release-please-end\s*(\*/|-->)?',
+)
 
 COMMENT_TYPES = frozenset(
     {
@@ -288,7 +292,7 @@ def collect(root: Node, language: Language, offset: int = 0) -> list[tuple[int, 
             line += text[: len(text) - len(comment)].count('\n')
             if line == 1 and comment.startswith('#!'):
                 continue
-            if not allowed(comment, language.directives):
+            if not allowed(comment, language.directives + RELEASE_PLEASE_MARKERS):
                 found.append((line, first_line(comment)))
             continue
         if language is PYTHON and (text := docstring(node)):
