@@ -164,7 +164,6 @@ with a token from a GitHub App, made by
        uses: manosliod/dev-tooling/.github/workflows/release-please.yml@v1.2
        with:
          app-client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
-         auto-merge: true
        secrets:
          app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
@@ -180,8 +179,11 @@ with a token from a GitHub App, made by
 `minor`. A job in the same workflow that `needs: release-please` and checks `release_created` runs only when a
 release was made, as `deploy` does above. No second workflow has to watch for new tags.
 
-**Auto-merge.** With `auto-merge: true`, the workflow turns on GitHub's auto-merge for the release pull request, so it
-squash-merges on its own once every required check passes, and each merge to the default branch ends in a release.
+**When a release happens.** By default the release pull request stays open and grows with every merge to the
+default branch, so pull requests can be merged one at a time without a release or a deploy each time. Merging the
+release pull request is the decision to release. With `auto-merge: true`, the workflow instead turns on GitHub's
+auto-merge for it, so it squash-merges on its own once every required check passes, and each merge to the default
+branch ends in a release.
 The repository needs "Allow auto-merge" on (`gh repo edit --enable-auto-merge`). Without it, someone merges the
 release pull request by hand.
 

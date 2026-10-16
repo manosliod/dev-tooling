@@ -12,7 +12,6 @@ jobs:
     uses: ./.github/workflows/release-please.yml
     with:
       app-client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
-      auto-merge: true
     secrets:
       app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
