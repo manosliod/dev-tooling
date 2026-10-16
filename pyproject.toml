@@ -1,6 +1,6 @@
 [project]
 name = "check-no-comments"
-version = "1.1.0"
+version = "1.2.0"
 description = "Fails when a repository has comments written for people; lets comments that tools read through."
 authors = [
     { name = "Manos Liodakis", email = "manosliod@gmail.com" }
