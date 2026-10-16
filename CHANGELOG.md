@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/manosliod/dev-tooling/compare/v1.2.0...v1.2.1) (2026-10-16)
+
+
+### 🐛 Bug Fixes
+
+* KAN-2 move the floating tags from the checked-out release tag ([#5](https://github.com/manosliod/dev-tooling/issues/5)) ([882fdb5](https://github.com/manosliod/dev-tooling/commit/882fdb509dc36d22abf346facd3222569f08c748))
+
 ## [1.2.0](https://github.com/manosliod/dev-tooling/compare/v1.1.0...v1.2.0) (2026-10-16)
 
 
