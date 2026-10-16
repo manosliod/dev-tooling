@@ -18,4 +18,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           subjectPattern: ${{ inputs.jira-project != '' && !startsWith(github.head_ref, 'release-please--') && github.event.pull_request.user.login != 'dependabot[bot]' && format('^{0}-[0-9]+ .+$', inputs.jira-project) || '' }}
-          subjectPatternError: The subject "{subject}" must start with a ${{ inputs.jira-project }} issue key, e.g. "feat: ${{ inputs.jira-project }}-12 show the winning line".
+          subjectPatternError: >-
+            The subject "{subject}" must start with a ${{ inputs.jira-project }} issue key,
+            e.g. "feat: ${{ inputs.jira-project }}-12 show the winning line".
