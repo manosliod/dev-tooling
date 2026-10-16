@@ -219,8 +219,15 @@ permissions:
 
 jobs:
   pr-title:
-    uses: manosliod/dev-tooling/.github/workflows/pr-title.yml@v1.2
+    uses: manosliod/dev-tooling/.github/workflows/pr-title.yml@v1.3
+    with:
+      jira-project: KAN
 ```
+
+With `jira-project`, the subject must also start with an issue key of that Jira project, e.g.
+`feat: KAN-12 show the winning line`, so every change can be traced to its issue. Release pull requests from
+release-please and Dependabot pull requests are exempt, because no person writes their titles. Without
+`jira-project`, only the Conventional Commit format is checked.
 
 ## Versions
 

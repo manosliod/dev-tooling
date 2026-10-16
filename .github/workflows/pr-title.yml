@@ -2,6 +2,10 @@ name: PR title
 
 on:
   workflow_call:
+    inputs:
+      jira-project:
+        type: string
+        default: ''
 
 jobs:
   pr-title:
@@ -12,3 +16,8 @@ jobs:
       - uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ github.token }}
+        with:
+          subjectPattern: ${{ inputs.jira-project != '' && !startsWith(github.head_ref, 'release-please--') && github.event.pull_request.user.login != 'dependabot[bot]' && format('^{0}-[0-9]+ .+$', inputs.jira-project) || '' }}
+          subjectPatternError: >-
+            The subject "{subject}" must start with a ${{ inputs.jira-project }} issue key,
+            e.g. "feat: ${{ inputs.jira-project }}-12 show the winning line".
