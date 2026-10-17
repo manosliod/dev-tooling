@@ -1,6 +1,12 @@
+import contextlib
+import io
+import os
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
-from check_no_comments import find_comments
+from check_no_comments import find_comments, main
 
 
 def lines(path: str, text: str) -> list[int]:
@@ -176,6 +182,27 @@ class ToolDirectiveTest(unittest.TestCase):
     def test_repo_allow_patterns(self) -> None:
         findings = find_comments('a.py', '# route: /movies\n# a note\n', (r'#\s*route:\s*\S+',))
         self.assertEqual([finding.line for finding in findings], [2])
+
+
+class CommandLineTest(unittest.TestCase):
+    def test_checks_files_outside_the_current_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            here, other, loose = Path(folder, 'here'), Path(folder, 'other'), Path(folder, 'loose')
+            for repo in (here, other):
+                repo.mkdir()
+                subprocess.run(['git', 'init', '-q', str(repo)], check=True)
+            loose.mkdir()
+            Path(other, 'a.py').write_text('x = 1  # why\n')
+            Path(loose, 'b.py').write_text('y = 2\n')
+            previous = Path.cwd()
+            os.chdir(here)
+            try:
+                with contextlib.redirect_stdout(io.StringIO()) as output:
+                    code = main([str(other / 'a.py'), str(loose / 'b.py')])
+            finally:
+                os.chdir(previous)
+        self.assertEqual(code, 1)
+        self.assertIn('a.py:1: # why', output.getvalue())
 
 if __name__ == '__main__':
     unittest.main()
