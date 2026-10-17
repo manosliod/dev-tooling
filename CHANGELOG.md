@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1](https://github.com/manosliod/dev-tooling/compare/v1.3.0...v1.3.1) (2026-10-17)
+
+
+### 🐛 Bug Fixes
+
+* KAN-6 check files outside the current repository against their own root ([#13](https://github.com/manosliod/dev-tooling/issues/13)) ([8a0b528](https://github.com/manosliod/dev-tooling/commit/8a0b528e2c212f6db547c7bf6146f254d570b61b))
+* KAN-7 allow inline script metadata in Python files ([#14](https://github.com/manosliod/dev-tooling/issues/14)) ([1c1ddef](https://github.com/manosliod/dev-tooling/commit/1c1ddefe4e6ad05563b76168de6be3cfdf2d5a98))
+
 ## [1.3.0](https://github.com/manosliod/dev-tooling/compare/v1.2.1...v1.3.0) (2026-10-16)
 
 
