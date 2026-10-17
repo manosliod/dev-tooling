@@ -412,9 +412,20 @@ def run_hook() -> int:
 def main(arguments: list[str]) -> int:
     if arguments[:1] == ['--hook']:
         return run_hook()
-    root = repo_root(Path.cwd()).resolve()
-    relatives = [Path(argument).resolve().relative_to(root).as_posix() for argument in arguments]
-    findings, checked = check(root, relatives or tracked_files(root))
+    groups: dict[Path, list[str]] = {}
+    for argument in arguments:
+        path = Path(argument).resolve()
+        root = repo_root(path.parent).resolve()
+        groups.setdefault(root, []).append(path.relative_to(root).as_posix())
+    if not groups:
+        root = repo_root(Path.cwd()).resolve()
+        groups[root] = tracked_files(root)
+    findings: list[Finding] = []
+    checked = 0
+    for root, relatives in groups.items():
+        found, count = check(root, relatives)
+        findings.extend(found)
+        checked += count
     for finding in findings:
         print(finding.render())
     if findings:
