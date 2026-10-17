@@ -83,7 +83,8 @@ uvx --from git+https://github.com/manosliod/dev-tooling@v1.2 check-no-comments
 uvx --from git+https://github.com/manosliod/dev-tooling@v1.2 check-no-comments src/app.ts src/main.py
 ```
 
-The first line checks the whole repository. The second checks only the files you name.
+The first line checks the whole repository. The second checks only the files you name; a file in another
+repository, or in a folder that is not one, is checked against its own root and that root's `.no-comments-*` files.
 
 ### Use it as a Claude Code hook
 
