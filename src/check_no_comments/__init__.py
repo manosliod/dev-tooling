@@ -95,6 +95,7 @@ MARKUP_DIRECTIVES = (
     r'\{#\s*djlint:\s*ignore\s+[\w,\-]+\s*#\}',
     r'<\?xml[^>]*\?>',
 )
+SCRIPT_METADATA = re.compile(r'(?m)^# /// (?P<type>[a-zA-Z0-9-]+)$\s(?P<content>(^#(| .*)$\s)+)^# ///$')
 RELEASE_PLEASE_MARKERS = (
     r'(#|//|/\*|<!--)\s*x-release-please-(start-)?(version|major|minor|patch)\s*(\*/|-->)?',
     r'(#|//|/\*|<!--)\s*x-release-please-end\s*(\*/|-->)?',
@@ -308,6 +309,14 @@ def collect(root: Node, language: Language, offset: int = 0) -> list[tuple[int, 
     return found
 
 
+def script_metadata_lines(text: str) -> set[int]:
+    lines: set[int] = set()
+    for block in SCRIPT_METADATA.finditer(text):
+        first = text.count('\n', 0, block.start()) + 1
+        lines.update(range(first, first + block.group(0).count('\n') + 1))
+    return lines
+
+
 def django_comments(source: bytes) -> list[tuple[int, str]]:
     return [
         (line, comment)
@@ -324,6 +333,9 @@ def find_comments(path: str, text: str, extra_allowed: tuple[str, ...] = ()) -> 
     raw = collect(parse(language.grammar, source), language)
     if language is HTML:
         raw.extend(django_comments(source))
+    if language is PYTHON:
+        metadata = script_metadata_lines(text)
+        raw = [(line, comment) for line, comment in raw if line not in metadata]
     return [
         Finding(path, line, comment) for line, comment in sorted(set(raw)) if not allowed(comment, extra_allowed)
     ]
