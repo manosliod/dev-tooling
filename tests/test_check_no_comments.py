@@ -31,6 +31,19 @@ class PythonTest(unittest.TestCase):
     def test_rejects_directive_with_explanation(self) -> None:
         self.assertEqual(lines('a.py', 'import os  # noqa: F401 used by plugins\n'), [1])
 
+    def test_allows_inline_script_metadata(self) -> None:
+        text = (
+            '#!/usr/bin/env -S uv run --script\n'
+            '# /// script\n'
+            '# requires-python = ">=3.12"\n'
+            '# dependencies = ["pyjwt"]\n'
+            '# ///\n'
+            '# fetch the token\n'
+            'import jwt\n'
+        )
+        self.assertEqual(lines('a.py', text), [6])
+        self.assertEqual(lines('a.py', '# /// script\n# dependencies = []\nx = 1\n'), [1, 2])
+
 
 class CStyleTest(unittest.TestCase):
     def test_java(self) -> None:

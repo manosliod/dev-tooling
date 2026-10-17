@@ -42,7 +42,7 @@ grammar for it.
 | Language | Allowed |
 | --- | --- |
 | Any script | A shebang on line 1 (`#!/usr/bin/env python3`) |
-| Python | `# noqa: F401`, `# type: ignore[...]`, `# pyright: ignore[...]`, `# fmt: off/on/skip`, `# isort: skip`, `# nosec`, `# pragma: no cover`, `# -*- coding: utf-8 -*-` |
+| Python | `# noqa: F401`, `# type: ignore[...]`, `# pyright: ignore[...]`, `# fmt: off/on/skip`, `# isort: skip`, `# nosec`, `# pragma: no cover`, `# -*- coding: utf-8 -*-`, an [inline script metadata](https://packaging.python.org/en/latest/specifications/inline-script-metadata/) block (`# /// script` … `# ///`) that uv reads to install a script's dependencies |
 | JS / TS / Vue | `// eslint-disable-next-line rule`, `/* eslint-disable */`, `// @ts-expect-error`, `// prettier-ignore`, `/* @vite-ignore */`, `/* webpackChunkName: "x" */`, `/* @__PURE__ */`, `/// <reference types="..." />`, `// @vitest-environment x` |
 | CSS | `/* stylelint-disable-next-line rule */`, `/* prettier-ignore */` |
 | Java | `// spotless:off/on`, `// @formatter:off/on`, `//noinspection X`, `// CHECKSTYLE:OFF` |
