@@ -253,8 +253,10 @@ What each part of the version means:
 
 Releases are made by this repository's own `release-please` workflow: `fix:` gives a patch, `feat:` a minor and a
 breaking change a major. A minor that can make a passing repository fail is still a minor, even when its commit is a
-`fix:`; give it the version with a `Release-As:` line. After each release, the `move-tags` job points `vMAJOR.MINOR`
-and `vMAJOR` at it, so a new minor creates `v1.2` and leaves `v1.1` where it was.
+`fix:`; give it the version with a `Release-As:` line. After each release, the workflow runs this repository's CI on
+the released commit, and only when it passes does the `move-tags` job point `vMAJOR.MINOR` and `vMAJOR` at it, so a
+new minor creates `v1.2` and leaves `v1.1` where it was. If CI fails, the tags stay on the previous release and no
+repository picks up the broken one.
 
 ## Develop
 
