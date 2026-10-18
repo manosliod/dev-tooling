@@ -15,8 +15,15 @@ jobs:
     secrets:
       app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
-  move-tags:
+  ci:
     needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  move-tags:
+    needs: [release-please, ci]
     if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-26.04
     permissions:
